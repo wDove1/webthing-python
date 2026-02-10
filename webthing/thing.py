@@ -20,7 +20,8 @@ class Thing:
             type_ = [type_]
 
         self.id = id_
-        self.context = 'https://webthings.io/schemas'
+        self.context = ['https://www.w3.org/ns/wot-next/td', 'https://webthings.io/schemas']
+        self.profiles = ["https://www.w3.org/2022/wot/profile/http-basic/v1"]
         self.type = type_
         self.title = title
         self.description = description
@@ -32,6 +33,9 @@ class Thing:
         self.subscribers = set()
         self.href_prefix = ''
         self.ui_href = None
+        self.securityDefinitions = { "nosec_sc": { "scheme": "nosec" }}
+        self.security = "nosec_sc"
+
 
     def as_thing_description(self):
         """
@@ -43,27 +47,29 @@ class Thing:
             'id': self.id,
             'title': self.title,
             '@context': self.context,
+            'profile': self.profiles,
             'properties': self.get_property_descriptions(),
             'actions': {},
             'events': {},
             'forms': [
                 {
-                    'rel': 'properties',
+                    'op': "readallproperties",
                     'href': '{}/properties'.format(self.href_prefix),
+                    'contentType': 'application/json',
                 },
                 {
-                    'rel': 'actions',
-                    'href': '{}/actions'.format(self.href_prefix),
-                },
-                {
-                    'rel': 'events',
-                    'href': '{}/events'.format(self.href_prefix),
-                },
+                    'op': "writemultipleproperties",
+                    'href': '{}/properties'.format(self.href_prefix),
+                    'contentType': 'application/json',
+                }
             ],
+            'securityDefinitions': self.securityDefinitions,
+            'security': self.security
         }
 
         for name, action in self.available_actions.items():
             thing['actions'][name] = action['metadata']
+            thing['actions'][name]['synchronous'] = True
             thing['actions'][name]['forms'] = [
                 {
                     'op': ['invokeaction'],

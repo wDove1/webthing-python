@@ -151,7 +151,7 @@ class ThingsHandler(BaseHandler):
         for thing in self.things.get_things():
             description = thing.as_thing_description()
             description['href'] = thing.get_href()
-            description['forms'].append({
+            description['links'].append({
                 'rel': 'alternate',
                 'href': '{}{}'.format(ws_href, thing.get_href()),
             })
@@ -243,7 +243,7 @@ class ThingHandler(tornado.websocket.WebSocketHandler, Subscriber):
         )
 
         description = self.thing.as_thing_description()
-        description['forms'].append({
+        description['links'].append({
             'rel': 'alternate',
             'href': '{}{}'.format(ws_href, self.thing.get_href()),
         })
@@ -419,6 +419,36 @@ class PropertiesHandler(BaseHandler):
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(thing.get_properties()))
 
+    def put(self, thing_id='0'):
+        """
+        Handle a PUT request.
+
+        thing_id -- ID of the thing this request is for
+        """
+        thing = self.get_thing(thing_id)
+        if thing is None:
+            self.set_status(404)
+            return
+
+        try:
+            properties = json.loads(self.request.body.decode())
+        except ValueError:
+            self.set_status(400)
+            return
+
+        for property_name, value in properties.items():
+            if thing.has_property(property_name):
+                try:
+                    thing.set_property(property_name, value)
+                except PropertyError:
+                    self.set_status(400)
+                    return
+            else:
+                self.set_status(404)
+                return
+
+        self.set_status(204)
+
 
 class PropertyHandler(BaseHandler):
     """Handle a request to /properties/<property>."""
@@ -466,8 +496,7 @@ class PropertyHandler(BaseHandler):
                 self.set_status(400)
                 return
 
-            self.set_header('Content-Type', 'application/json')
-            self.write(json.dumps(thing.get_property(property_name)))
+            self.set_status(204)
         else:
             self.set_status(404)
 
@@ -570,6 +599,7 @@ class ActionHandler(BaseHandler):
             return
 
         # Allow payloads wrapped inside `value` field
+        #TODO: remove this in the future
         if 'value' in input_:
             input_ = input_['value']
 
