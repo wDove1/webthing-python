@@ -102,6 +102,10 @@ class Action:
         """Override this with the code necessary to cancel the action."""
         pass
 
+    def get_output(self):
+        """Override this with the code necessary to get the output of the action."""
+        pass
+
     def finish(self):
         """Finish performing the action."""
         self.status = 'completed'

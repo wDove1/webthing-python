@@ -605,16 +605,16 @@ class ActionHandler(BaseHandler):
 
         action = thing.perform_action(action_name, input_)
         if action:
-            response = action.as_action_description()
+
 
             # Start the action
             tornado.ioloop.IOLoop.current().spawn_callback(
                 perform_action,
                 action,
             )
-
-            self.set_status(201)
-            self.write(json.dumps(response))
+            self.set_header('Content-Type', 'application/json')
+            self.set_status(200)
+            self.write(json.dumps(action.get_output()))
         else:
             self.set_status(400)
 
